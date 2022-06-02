@@ -1,24 +1,71 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model, Types } = require('mongoose');
+const dateFormat = require('../utils/dateFormat');
 
-const CommentSchema = new Schema({
-    writtenBy: {
+const ReplySchema = new Schema(
+    {
+        // set custom id to avoid confusion with parent comment _id
+        replyId: {
+            type: Schema.Types.ObjectId,
+            default: () => new Types.ObjectId()
+        },
+
+        replyBody: {
+            type: String
+        },
+
+        writtenBy: {
         type: String
+        },
+
+        createdAt: {
+            type: Date,
+            default: Date.now,
+            get: createdAtVal => dateFormat(createdAtVal)
+        }
     },
 
-    commentBody: {
-        type: String
-    },
+    {
+        toJSON: {
+            getters: true
+        }
+    }
+);
 
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
+const CommentSchema = new Schema(
+    {
+        writtenBy: {
+            type: String
+        },
 
-    size: {
-        type: String,
-        default: 'Large'
+        commentBody: {
+            type: String
+        },
+
+        createdAt: {
+            type: Date,
+            default: Date.now,
+            get: createdAtVal => dateFormat(createdAtVal)
+        },
+
+        size: {
+            type: String,
+            default: 'Large'
+        },
+
+        replies: [ReplySchema]
     },
-})
+    {
+        toJSON: {
+            getters: true,
+            virtuals: true
+        },
+        id: false
+    }
+)
+
+CommentSchema.virtual('replyCount').get(function() {
+    return this.replies.length;
+});
 
 // create the Comment model using the CommentSchema
 const Comment = model('Comment', CommentSchema);
